@@ -1,0 +1,19 @@
+  Horizontal {
+  margin: 0;
+  padding: 0;
+  height: auto;
+  width: 100%;
+}
+#nfc_id {
+  width: 80%;
+}
+#nfc_id.error {
+  color: red;
+}
+#nfc_id.success {
+  color: green;
+}
+
+#leerncfc{
+  width: 20%;
+}
