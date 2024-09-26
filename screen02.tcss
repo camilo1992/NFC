@@ -1,19 +1,62 @@
-  Horizontal {
-  margin: 0;
-  padding: 0;
-  height: auto;
+.body {
+  width: 100%;
+  height: 100%;
+  padding: 0 2;
+}
+
+.titleContainer {
+  width: 100%;
+  height: 5%;
+  margin-bottom: 1;
+  align: center bottom;
+  background: green;
+}
+
+.h1 {
+  color: white;
+  text-style: bold;
+}
+
+.formField {
+  width: 100%;
+  height: 12%;
+  align: center middle;
+}
+
+#nfcIdInput {
   width: 100%;
 }
+
 #nfc_id {
   width: 80%;
 }
-#nfc_id.error {
-  color: red;
-}
-#nfc_id.success {
-  color: green;
+
+#leerncfc {
+  width: 19.9%;
 }
 
-#leerncfc{
-  width: 20%;
+.fullWidthBtn {
+  width: 99%;
+}
+
+#logger {
+  width: 100%;
+  height: 10;
+  background: black;
+}
+
+#scoreActionsContainer {
+  width: 100%;
+  height: 10%;
+  align: center middle;
+}
+
+.score_button {
+  width: 33%;
+  margin: 0 1;
+}
+
+.error {
+  color: red;
+  text-style: bold;
 }

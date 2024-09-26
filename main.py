@@ -1,6 +1,11 @@
 from textual import work, events, on
 from textual.app import App, ComposeResult
-from textual.containers import VerticalScroll, Container, Horizontal
+from textual.containers import (
+    Vertical,
+    Container,
+    Horizontal,
+    VerticalScroll,
+)
 from textual.widgets import (
     Input,
     Markdown,
@@ -8,7 +13,6 @@ from textual.widgets import (
     Header,
     Footer,
     Label,
-    Rule,
     Log,
     Select,
 )
@@ -23,37 +27,49 @@ import json
 import re
 
 
-class MainScreen(Screen):
-    regex = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b"
+SERVER_ADDRESS = 'kind-hermit-freely.ngrok-free.app'
+TEAM_OPTIONS = [
+    ("Equipo 1", "Equipo 1"),
+    ("Equipo 2", "Equipo 2"),
+    ("Equipo 3", "Equipo 3"),
+    ("Equipo 4", "Equipo 4"),
+    ("Equipo 5", "Equipo 5"),
+    ("Equipo 6", "Equipo 6"),
+    ("Equipo 7", "Equipo 7"),
+    ("Equipo 8", "Equipo 8"),
+    ("Equipo 9", "Equipo 9"),
+    ("Equipo 10", "Equipo 10"),
+]
 
+class MainScreen(Screen):
     def compose(self) -> ComposeResult:
-        options = [
-            ("Equipo 1", 1),
-            ("Equipo 2", 2),
-            ("Equipo 3", 3),
-            ("Equipo 4", 4),
-            ("Equipo 5", 5),
-            ("Equipo 6", 6),
-            ("Equipo 8", 8),
-            ("Equipo 9", 9),
-            ("Equipo 10", 10),
-            ("Equipo 11", 11),
-        ]
+        yield Header()
         
-        with Container():
-            yield Label("Seleccione un quipo") # ACA PODEMOS COLOCAR LOS EQUIPOS
-            yield Select(options, id="teamSelction")
+        with Container(classes="body"):
+            with Vertical(classes="titleContainer"):
+                yield Label("Registro de Usuarios", classes="h1")
             
-        with Container():
-            yield Label("Manilla")
-            with Horizontal():
-                yield Input("", id="nfc_id")
-                yield Button("Leer", id="leerncfc")
+            with Vertical(classes="formField"):
+                yield Label("Seleccione un equipo")
+                yield Select(TEAM_OPTIONS, id="teamSelction")
             
-            yield Label("Nombre")
-            yield Input("", id="nombre")
-            yield Button("Registrar", id="registrar")
-            yield Log(id="mensaje")
+            with Vertical(classes="formField"):
+                yield Label("Manilla")
+                with Horizontal(id="nfcIdInput"):
+                    yield Input("", id="nfc_id")
+                    yield Button("Leer", id="leerncfc")
+            
+            with Vertical(classes="formField"):
+                yield Label("Nombre")
+                yield Input("", id="nombre")
+            
+            with Vertical(classes="formField"):
+                yield Button("Registrar", id="registrar", classes="fullWidthBtn")
+
+            yield Log(id="logger")
+            
+            with Vertical(classes="formField"):
+                yield Button("Limpiar consola", id="clearConsole", classes="fullWidthBtn")
 
         yield Footer()
 
@@ -63,7 +79,7 @@ class MainScreen(Screen):
         try:
             nfc_id = self.query_one("#nfc_id", Input).value
             if  nfc_id == "":
-                self.query_one("#mensaje", Log).write_line(
+                self.query_one("#logger", Log).write_line(
                     "Por favor, acerque la manilla de nuevo "
                 )
                 return
@@ -71,12 +87,13 @@ class MainScreen(Screen):
 
             self.run_worker(self.add_user(nfc_id), exclusive=True)
 
-            self.query_one("#mensaje", Log).clear()
-            self.query_one("#mensaje", Log).write_line("Lectura completada")
+            self.query_one("#logger", Log).clear()
+            self.query_one("#logger", Log).write_line("Lectura completada")
 
         except Exception as e:
             print(e)
     
+    #registrar usuario
     @on(Button.Pressed, "#registrar")
     def action_registrar(self):
         try:
@@ -85,7 +102,7 @@ class MainScreen(Screen):
             team = self.query_one("#teamSelction", Select).value
             
             if name == "" or team == "" or nfc_id == "":
-                self.query_one("#mensaje", Log).write_line("Por favor, complete todos los campos")
+                self.query_one("#logger", Log).write_line("Por favor, complete todos los campos")
                 return
 
             self.run_worker(self.add_user(name, team, nfc_id), exclusive=True)
@@ -94,27 +111,27 @@ class MainScreen(Screen):
             self.query_one("#nombre", Input).value = ""
             self.query_one("#teamSelction", Input).value = ""
             self.query_one("#nfc_id", Input).classes = ""
-            self.query_one("#mensaje", Log).clear()
-            self.query_one("#mensaje", Log).write_line("Usuario Registrado con éxito")
+            self.query_one("#logger", Log).clear()
+            self.query_one("#logger", Log).write_line("Usuario Registrado con éxito")
 
         except Exception as e:
             print(e)
 
     async def add_user(self, name, team, nfc_id) -> None:
-        conn = http.client.HTTPSConnection("kind-hermit-freely.ngrok-free.app")
+        conn = http.client.HTTPSConnection(SERVER_ADDRESS)
         payload = json.dumps({"name": name, "team": team, "id": nfc_id, "score": 0})
         headers = {"Content-Type": "application/json"}
         conn.request("POST", "/signup", payload, headers) #Definir APi que envia los valores 
         res = conn.getresponse()
         data = res.read()
 
-        self.query_one("#mensaje", Log).write_line(data.decode("utf-8"))
+        self.query_one("#logger", Log).write_line(data.decode("utf-8"))
         print(data.decode("utf-8"))
 
-    
+    #leer nfc
     @on(Button.Pressed, "#leerncfc")
     def action_leerNFC(self):
-        self.query_one("#mensaje", Log).clear()
+        self.query_one("#logger", Log).clear()
         try:
 
             reader = nfc.Reader()
@@ -129,71 +146,56 @@ class MainScreen(Screen):
             # 3  ....
             self.query_one("#nfc_id", Input).classes = "success"  # cambia la clase del elemento para que si la operacion es exitosa se ilumine verde
         except Exception as e:
-            self.query_one("#nfc_id", Input).value = "Coloque la tarjeta nuevamente"
-            self.query_one("#nfc_id", Input).classes = "error"
-            print(e)
+            self.query_one("#logger", Log).write_line("Coloque la tarjeta nuevamente")
+            
+    #limpiar consola
+    @on(Button.Pressed, "#clearConsole")
+    def action_clearConsole(self):
+        self.query_one("#logger", Log).clear()
 
 
-class NFCControllApp(App):
-    CSS_PATH = "screen02.tcss"
-    BINDINGS = [
-        Binding("ctrl+c", "quit", "Quit", show=True, priority=True),
-        Binding("ctrl+q", "quit", "Quit", show=True, priority=True),
-        Binding("registro", "registro", "Registro", show=True, priority=True),
-        Binding("Leer puntaje", "acceso", "puntos", show=True, priority=True),
-    ]
-    SCREENS = {"main": MainScreen}
-
-    def on_mount(self) -> None:
-        print("Mounted")
-
+class ScoreManagementScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
+
+        with VerticalScroll(classes="body"):
+            with Vertical(classes="titleContainer"):
+                yield Label("Consulta de Puntaje", classes="h1")
+            
+            with Vertical(classes="formField"):
+                yield Label("Id NFC")
+                with Horizontal(id="nfcIdInput"):
+                    yield Input("", id="nfc_id")
+                    yield Button("Leer", id="leerncfc")
+            
+            with Vertical(classes="formField"):
+                yield Button("Consular puntaje", id="consultar", classes="fullWidthBtn")
+            
+            with Vertical(classes="formField"):
+                yield Label("Puntuacion Actual")
+                yield Input("", id="puntaje")
+
+            with Vertical(classes="titleContainer"):
+                yield Label("Ingrese el puntaje y elija una operación ↓", classes="h1")
+
+            with Vertical(classes="formField"):
+                yield Label("Modificar puntos")
+                yield Input("", id="new_score")
+
+            with Horizontal(id="scoreActionsContainer"):
+                yield Button("Agregar", classes="score_button", id="add")
+                yield Button("Restar", classes="score_button", id="deduct")
+                yield Button("Asignar", classes="score_button", id="set")
+
+            yield Log(id="logger")
+            
+            with Vertical(classes="formField"):
+                yield Button("Limpiar consola", id="clearConsole", classes="fullWidthBtn")
         yield Footer()
-
-    def action_registro(self):
-        self.push_screen(MainScreen())
-
-    def action_acceso(self):
-        self.push_screen(AccesoScreen())
-
-
-class AccesoScreen(Screen):
-    active = False
-    salon = 0
-
-    def compose(self) -> ComposeResult:
-        
-        yield Header()
-        with Container():
-            yield Markdown("Leer Puntaje", id="titulo", classes="h1")
-            yield Markdown("Por favor, acerque su tarjeta NFC al lector")
-        
-            yield Label("Manilla")        
-            yield Input("", id="nfc_id")
-            yield Button("Leer", id="leerncfc")
-            
-            yield Button("Consular puntaje", id="consultar")
-            with Horizontal():
-                 yield Label("Puntuacion")
-                 yield Input("", id="puntaje")
-            with Horizontal():
-                 yield Button("Agregar", id="agregar")
-                 yield Button("Restar", id="restar")
-                 yield Button("Asignar", id="asignar")
-            with Horizontal():
-                 yield Label("Agregar puntos")
-                 yield Input("0", id="Agregar_puntos")
-            
-            
-            yield Log("", id="respuesta")
-
-        yield Footer()
-
 
     #leer puntaje de un usuario con nfc 
     async def get_score(self, nfc_id) -> None: 
-        conn = http.client.HTTPSConnection("kind-hermit-freely.ngrok-free.app")  
+        conn = http.client.HTTPSConnection(SERVER_ADDRESS)  
         endPoint = f"/get-user-score/{nfc_id}"
         conn.request("GET", endPoint) 
         res = conn.getresponse()
@@ -209,129 +211,81 @@ class AccesoScreen(Screen):
         try:
             nfcId = self.query_one("#nfc_id", Input).value
             
+            if nfcId == "":
+                self.query_one("#logger", Log).write_line("Ingrese un ID para consultar")
+                return
+            
             self.run_worker(self.get_score(nfcId),exclusive=True)
         except Exception as e:
             print(e)
     
-     #sumar puntaje
+    #add score
     async def add_score(self, nfc_id, puntaje) -> None:
-        conn = http.client.HTTPSConnection("kind-hermit-freely.ngrok-free.app")
+        conn = http.client.HTTPSConnection(SERVER_ADDRESS)
         payload = json.dumps({"id": nfc_id, "increment": puntaje})
         headers = {"Content-Type": "application/json"}
         conn.request("POST", "/add-score", payload, headers) 
         res = conn.getresponse()
         data = res.read()
 
-        self.query_one("#respuesta", Log).write_line(data.decode("utf-8")) 
+        self.query_one("#logger", Log).write_line(data.decode("utf-8")) 
         print(data.decode("utf-8"))
 
-    @on(Button.Pressed, "#agregar")
-    def action_agregar(self):
-        try:
-            nfcId = self.query_one("#nfc_id", Input).value
-            puntajeExtra = self.query_one("#Agregar_puntos", Input).value
-            self.run_worker(self.add_score( nfcId, puntajeExtra),exclusive=True)
-        except Exception as e:
-            print(e)
-
-    
-    #restar puntaje
+    #deduct score
     async def deduct_score(self, nfc_id, puntaje) -> None:
-        conn = http.client.HTTPSConnection("kind-hermit-freely.ngrok-free.app")
+        conn = http.client.HTTPSConnection(SERVER_ADDRESS)
         payload = json.dumps({"id": nfc_id, "decrement": puntaje})
         headers = {"Content-Type": "application/json"}
         conn.request("POST", "/subtract-score", payload, headers)
         res = conn.getresponse()
         data = res.read()
 
-        self.query_one("#respuesta", Log).write_line(data.decode("utf-8")) 
+        self.query_one("#logger", Log).write_line(data.decode("utf-8")) 
         print(data.decode("utf-8"))
-    
-    @on(Button.Pressed, "#restar")
-    def action_agregar(self):
-        try:
-            nfcId = self.query_one("#nfc_id", Input).value
-            puntajeExtra = self.query_one("#Agregar_puntos", Input).value
-            self.run_worker(self.deduct_score( nfcId, puntajeExtra),exclusive=True)
-        except Exception as e:
-            print(e)
 
-    
-    @on(Select.Changed)
-    def select_changed(self, event: Select.Changed) -> None:
-        self.salon = str(event.value)
-        self.log(f"Equipo seleccionado: {self.salon}")
-        self.query_one("#mensaje", Log).write_line(f"Equipo seleccionado: {self.salon}")
-
-    @on(Button.Pressed, "#leernfc")
-    async def action_leernfc(self):
-
-        self.active = True
-        self.read_nfc()
-
-    @on(Button.Pressed, "#stopleernfc")
-    async def action_stopleernfc(self):
-        self.active = False
-
-    @work(exclusive=True, thread=True)
-    async def read_nfc(self) -> None:
-        self.log("Leyendo tarjeta NFC")
-        try:
-            reader = nfc.Reader()
-            reader.connect()
-            list = reader.get_uid()
-            guid = ""
-            for i in list:
-                guid += str(i)
-            self.query_one("#nfc_id", Input).value = guid
-
-            self.run_worker(self.checkin(),exclusive=True)
-            time.sleep(5)
-        except Exception as e:
-            self.query_one("#nfc_id", Input).value = "Coloque una nueva tarjeta"
-            time.sleep(0.5)
-
-    async def on_worker_state_changed(self, event: Worker.StateChanged):
-
-        if event.state == WorkerState.SUCCESS:
-
-            if self.active:
-                self.read_nfc()
-
-    async def checkin(self):
-        conn = http.client.HTTPSConnection("nfc.ekuulu.com")
-        payload = json.dumps({"nfcid": self.query_one("#nfc_id", Input).value, "room": self.salon})
+    #set score
+    async def set_score(self, nfc_id, puntaje) -> None:
+        conn = http.client.HTTPSConnection(SERVER_ADDRESS)
+        payload = json.dumps({"id": nfc_id, "newScore": puntaje})
         headers = {"Content-Type": "application/json"}
-        conn.request("POST", "/api/checkin", payload, headers)
+        conn.request("POST", "/set-score", payload, headers) 
         res = conn.getresponse()
         data = res.read()
-        json_data = json.loads(data.decode("utf-8"))
-        name = json_data["name"]
-        self.query_one("#mensaje", Log).write_line(
-                f"Acceso Registrado: {name} en el salón {self.salon}"
-            )
-    
 
-    @on(Button.Pressed, "#ingresar")
-    def action_ingresar(self):
+        self.query_one("#logger", Log).write_line(data.decode("utf-8")) 
+        print(data.decode("utf-8"))
+    
+    #Score button event
+    @on(Button.Pressed, ".score_button")
+    def action_score(self, event: Button.Pressed):
         try:
-            nfc_id = self.query_one("#nfc_id", Input).value
-            if nfc_id == "":
-                self.query_one("#mensaje", Log).write_line(
-                    "Por favor, acerque su tarjeta NFC al lector"
-                )
+            nfcId = self.query_one("#nfc_id", Input).value
+            score = self.query_one("#new_score", Input).value
+            button_label = event.button._id
+            
+            if score == "" or nfcId == "":
+                self.query_one("#logger", Log).write_line("Por favor, complete todos los campos.")
                 return
-            else:
-                self.query_one("#nfc_id", Input).value = ""
-                self.query_one("#nfc_id", Input).classes = ""
-                self.query_one("#mensaje", Log).clear()
-                self.query_one("#mensaje", Log).write_line("Acceso concedido")
+            
+            if button_label == "add":
+                self.run_worker(self.add_score(nfcId, score), exclusive=True)
+                return
+            elif button_label == "deduct":
+                self.run_worker(self.deduct_score(nfcId, score), exclusive=True)
+                return
+            elif button_label == "set":
+                self.run_worker(self.set_score(nfcId, score), exclusive=True)
+                return
+
         except Exception as e:
             print(e)
 
+    #leer nfc
     @on(Button.Pressed, "#leerncfc")
     def action_leerNFC(self):
+        self.query_one("#logger", Log).clear()
         try:
+
             reader = nfc.Reader()
             reader.connect()
             list = reader.get_uid()
@@ -339,18 +293,37 @@ class AccesoScreen(Screen):
             for i in list:
                 guid += str(i)
             self.query_one("#nfc_id", Input).value = guid
-            self.query_one("#nfc_id", Input).classes = "success"
+            self.query_one("#nfc_id", Input).classes = "success" 
         except Exception as e:
-            self.query_one("#nfc_id", Input).value = "Coloque la tarjeta nuevamente"
-            self.query_one("#nfc_id", Input).classes = "error"
-            print(e)
+            self.query_one("#logger", Log).write_line("Coloque la tarjeta nuevamente")
 
-    def action_ingresar(self):
+    #limpiar consola
+    @on(Button.Pressed, "#clearConsole")
+    def action_clearConsole(self):
+        self.query_one("#logger", Log).clear()
+
+class NFCControllApp(App):
+    
+    CSS_PATH = "screen02.tcss"
+    BINDINGS = [
+        Binding("ctrl+c", "quit", "Quit", show=True, priority=True),
+        Binding("registro", "registro", "Registro", show=True, priority=True),
+        Binding("Puntaje", "puntaje", "puntaje", show=True, priority=True),
+    ]
+    SCREENS = {"main": MainScreen, "score": ScoreManagementScreen}
+
+    def on_mount(self) -> None:
         self.push_screen(MainScreen())
 
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Footer()
 
-    
+    def action_registro(self):
+        self.push_screen(MainScreen())
 
+    def action_puntaje(self):
+        self.push_screen(ScoreManagementScreen())
 
 if __name__ == "__main__":
     app = NFCControllApp()
