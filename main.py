@@ -29,16 +29,21 @@ import re
 
 SERVER_ADDRESS = 'kind-hermit-freely.ngrok-free.app'
 TEAM_OPTIONS = [
-    ("Equipo 1", "Equipo 1"),
-    ("Equipo 2", "Equipo 2"),
-    ("Equipo 3", "Equipo 3"),
-    ("Equipo 4", "Equipo 4"),
-    ("Equipo 5", "Equipo 5"),
-    ("Equipo 6", "Equipo 6"),
-    ("Equipo 7", "Equipo 7"),
-    ("Equipo 8", "Equipo 8"),
-    ("Equipo 9", "Equipo 9"),
-    ("Equipo 10", "Equipo 10"),
+    ("Z.N.E", "Z.N.E"),
+    ("Forum", "Forum"),
+    ("Ultraboost", "Ultraboost"),
+    ("Samba", "Samba"),
+    ("Gazelle", "Gazelle"),
+    ("Superstar", "Superstar"),
+    ("Stan Smith", "Stan Smith"),
+    ("Campus", "Campus"),
+    ("Copa", "Copa"),
+    ("Adilette", "Adilette"),
+    ("Ozweego", "Ozweego"),
+    ("Centenial", "Centenial"),
+    ("Orketro", "Orketro"),
+    ("Supernova", "Supernova"),
+    ("Predator", "Predator"),
 ]
 
 class MainScreen(Screen):
